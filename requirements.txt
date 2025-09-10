@@ -21,6 +21,7 @@ pytz==2025.2
 scikit-learn==1.7.2
 scipy==1.16.1
 six==1.17.0
+skl2onnx==1.19.1
 sympy==1.14.0
 threadpoolctl==3.6.0
 tqdm==4.67.1
