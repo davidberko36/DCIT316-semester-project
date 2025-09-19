@@ -1,6 +1,8 @@
 package services
 
 import (
+	"time"
+
 	"github.com/davidberko36/DCIT316-semester-project/backend/internal/models"
 )
 
@@ -29,4 +31,10 @@ type NewsService interface {
 	// ML-related operations
 	DetectFakeNews(title, content string) (map[string]interface{}, error)
 	GetRecommendations(userID int64, limit int) ([]models.News, error)
+	GetFilteredRecommendations(userID int64, limit int, fakeNewsProbabilityThreshold float64) ([]models.News, error)
+
+	// External news fetching
+	FetchAndStoreNews(country, category string, limit int) ([]models.News, error)
+	ProcessArticle(input models.NewsInput) (*models.News, error)
+	DeleteOldNews(age time.Duration) (int64, error)
 }

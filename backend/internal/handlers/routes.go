@@ -10,6 +10,7 @@ func SetupRouter(
 	userHandler *UserHandler,
 	newsHandler *NewsHandler,
 	authMiddleware *middleware.AuthMiddleware,
+	externalHandler *NewsExternalHandler,
 ) *gin.Engine {
 	router := gin.Default()
 
@@ -34,9 +35,10 @@ func SetupRouter(
 		// News routes - some public, some protected
 		news := api.Group("/news")
 		{
-			news.GET("/", newsHandler.GetNews)               // Public endpoint to get news
-			news.GET("/:id", newsHandler.GetNewsById)        // Public endpoint to get a specific news article
-			news.POST("/detect", newsHandler.DetectFakeNews) // Public endpoint to detect fake news
+			news.GET("/", newsHandler.GetNews)                // Public endpoint to get news
+			news.GET("/:id", newsHandler.GetNewsById)         // Public endpoint to get a specific news article
+			news.POST("/detect", newsHandler.DetectFakeNews)  // Public endpoint to detect fake news
+			news.GET("/fetch", newsHandler.FetchExternalNews) // Public endpoint to fetch news from external API
 
 			// Protected news routes
 			protectedNews := news.Group("/")
@@ -56,7 +58,17 @@ func SetupRouter(
 			user.GET("/profile", userHandler.GetProfile)
 			user.PUT("/profile", userHandler.UpdateProfile)
 			user.GET("/recommendations", newsHandler.GetRecommendations)
+			user.GET("/recommendations/filtered", newsHandler.GetFilteredRecommendations)
 			user.GET("/activity", newsHandler.GetUserActivity)
+		}
+
+		// External news routes
+		if externalHandler != nil {
+			external := api.Group("/external")
+			{
+				external.GET("/ghana", externalHandler.FetchGhanaNews)
+				external.POST("/ghana/store", externalHandler.FetchAndStoreGhanaNews)
+			}
 		}
 	}
 

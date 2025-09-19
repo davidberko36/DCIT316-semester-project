@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -183,4 +184,24 @@ func (h *NewsHandler) GetUserActivity(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, activities)
+}
+
+// FetchExternalNews fetches news from external API and stores them in the database
+func (h *NewsHandler) FetchExternalNews(c *gin.Context) {
+	// Parse query parameters
+	country := c.DefaultQuery("country", "gh") // Default to Ghana
+	category := c.Query("category")            // Optional category filter
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	// Call the service to fetch and store news
+	news, err := h.newsService.FetchAndStoreNews(country, category, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to fetch news: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Successfully fetched and stored %d news articles", len(news)),
+		"news":    news,
+	})
 }

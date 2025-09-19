@@ -44,12 +44,18 @@ func main() {
 	userService := services.NewUserService(db, authMiddleware)
 	newsService := services.NewNewsService(db, fakeNewsDetector, recommendationEngine)
 
+	// Initialize and start the news scheduler
+	newsScheduler := services.NewNewsScheduler(newsService)
+	newsScheduler.Start()
+	defer newsScheduler.Stop()
+
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	newsHandler := handlers.NewNewsHandler(newsService)
+	externalHandler := handlers.NewNewsExternalHandler(newsService)
 
 	// Set up router with handlers
-	router := handlers.SetupRouter(userHandler, newsHandler, authMiddleware)
+	router := handlers.SetupRouter(userHandler, newsHandler, authMiddleware, externalHandler)
 
 	// Run the server
 	log.Printf("Server starting on port %s\n", port)
