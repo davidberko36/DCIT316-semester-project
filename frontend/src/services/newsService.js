@@ -9,7 +9,7 @@ const newsService = {
   },
 
   // Get latest news (simplified for homepage)
-  getLatestNews: async (limit = 10) => {
+  getLatestNews: async (limit = 20) => {
     const response = await api.get('/news', { 
       params: { limit } 
     });
@@ -23,7 +23,7 @@ const newsService = {
   },
 
   // Get Ghana news
-  getGhanaNews: async (category = '', limit = 10) => {
+  getGhanaNews: async (category = '', limit = 20) => {
     const params = { limit };
     if (category) params.category = category;
     
@@ -38,7 +38,7 @@ const newsService = {
   },
 
   // Get personalized recommendations (requires auth)
-  getRecommendations: async (limit = 10) => {
+  getRecommendations: async (limit = 20) => {
     const response = await api.get('/user/recommendations', { params: { limit } });
     return response.data;
   },
@@ -64,6 +64,97 @@ const newsService = {
   fetchExternalNews: async () => {
     const response = await api.get('/news/fetch');
     return response.data;
+  },
+  
+  // Get news from multiple categories for Ghana
+  getGhanaNewsByCategories: async (categories = ['general', 'business', 'technology', 'entertainment', 'sports', 'health', 'science'], limitPerCategory = 5) => {
+    // This will be implemented on the backend
+    // For now, we'll make separate requests and combine them
+    const allNews = [];
+    
+    // Make parallel requests for all categories
+    try {
+      const requests = categories.map(category => 
+        api.get('/external/ghana', { params: { category, limit: limitPerCategory } })
+      );
+      
+      const responses = await Promise.all(requests);
+      
+      // Combine all articles
+      responses.forEach(response => {
+        if (response.data && response.data.articles) {
+          allNews.push(...response.data.articles);
+        }
+      });
+      
+      return { articles: allNews };
+    } catch (error) {
+      console.error('Error fetching multi-category news:', error);
+      throw error;
+    }
+  },
+
+  // SerpAPI news sources
+  getSerpApiNews: async (query = 'Ghana news', location = 'Ghana', limit = 20) => {
+    try {
+      const response = await api.get('/external/serpapi', {
+        params: { query, location, limit }
+      });
+      
+      // Transform the data to match our application's expected format
+      if (response.data && response.data.news_results) {
+        const articles = response.data.news_results.map(item => ({
+          id: `serpapi-${item.position}`,
+          title: item.title,
+          description: item.snippet,
+          content: item.snippet,
+          url: item.link,
+          source: item.source,
+          publishedAt: item.published_at || item.date,
+          image: item.thumbnail,
+          category: 'news',
+          fakeProbability: 0.5 // Default value, will be calculated by backend
+        }));
+        return { articles };
+      }
+      
+      return { articles: [] };
+    } catch (error) {
+      console.error('Error fetching SerpAPI news:', error);
+      throw error;
+    }
+  },
+  
+  // Get SerpAPI news by category
+  getSerpApiNewsByCategory: async (category, location = 'Ghana', limit = 20) => {
+    try {
+      const query = `${category} news Ghana`;
+      const response = await api.get('/external/serpapi', {
+        params: { query, location, limit }
+      });
+      
+      // Transform the data to match our application's expected format
+      if (response.data && response.data.news_results) {
+        const articles = response.data.news_results.map(item => ({
+          id: `serpapi-${category}-${item.position}`,
+          title: item.title,
+          description: item.snippet,
+          content: item.snippet,
+          url: item.link,
+          source: item.source,
+          publishedAt: item.published_at || item.date,
+          image: item.thumbnail,
+          category: category,
+          fakeProbability: 0.5 // Default value, will be calculated by backend
+        }));
+        return { articles };
+      }
+      
+      return { articles: [] };
+    } catch (error) {
+      console.error(`Error fetching SerpAPI ${category} news:`, error);
+      throw error;
+    }
   }
 };
 

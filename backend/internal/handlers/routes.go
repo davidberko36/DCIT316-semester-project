@@ -14,6 +14,12 @@ func SetupRouter(
 ) *gin.Engine {
 	router := gin.Default()
 
+	// Apply CORS middleware
+	router.Use(middleware.NewCORSMiddleware())
+
+	// Initialize SerpAPI handler
+	serpAPIHandler := NewSerpAPIHandler()
+
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -68,6 +74,7 @@ func SetupRouter(
 			{
 				external.GET("/ghana", externalHandler.FetchGhanaNews)
 				external.POST("/ghana/store", externalHandler.FetchAndStoreGhanaNews)
+				external.GET("/serpapi", serpAPIHandler.GetSerpAPINews) // SerpAPI endpoint
 			}
 		}
 	}

@@ -181,15 +181,28 @@ func initSchema(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS user_activity (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			user_id INTEGER NOT NULL,
-			news_id INTEGER NOT NULL,
+			news_id TEXT NOT NULL,
 			activity_type TEXT NOT NULL,
 			created_at DATETIME NOT NULL,
-			FOREIGN KEY (user_id) REFERENCES users (id),
-			FOREIGN KEY (news_id) REFERENCES news (id)
+			FOREIGN KEY (user_id) REFERENCES users (id)
 		)
 	`)
 	if err != nil {
 		return err
+	}
+
+	// Add a migration to handle existing integer IDs
+	// First check if we need to migrate by seeing if any rows exist with integer news_id
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM user_activity WHERE typeof(news_id) = 'integer'").Scan(&count)
+	if err == nil && count > 0 {
+		// There are rows with integer news_id, let's convert them to text
+		_, err = db.Exec("UPDATE user_activity SET news_id = CAST(news_id AS TEXT) WHERE typeof(news_id) = 'integer'")
+		if err != nil {
+			log.Printf("Warning: Failed to migrate user_activity.news_id to TEXT: %v", err)
+		} else {
+			log.Printf("Successfully migrated %d user_activity records to use TEXT news_id", count)
+		}
 	}
 
 	return nil

@@ -3,8 +3,11 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"hash/fnv"
+	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/davidberko36/DCIT316-semester-project/backend/internal/models"
@@ -69,11 +72,148 @@ func (s *NewsServiceImpl) GetNews(category string, limit, offset int) ([]models.
 		news = append(news, n)
 	}
 
+	// If flag is set to include SerpAPI results, fetch and add them
+	includeSerpAPI := os.Getenv("INCLUDE_SERPAPI_IN_FEED")
+	if includeSerpAPI == "true" && len(news) < limit {
+		// Create SerpAPI service
+		serpAPIService := NewSerpAPIService()
+
+		// Calculate how many additional news items we need
+		remainingItems := limit - len(news)
+
+		// Determine the query based on category
+		serpQuery := "Ghana news"
+		if category != "" {
+			serpQuery = category + " news Ghana"
+		}
+
+		// Fetch news from SerpAPI
+		serpResults, err := serpAPIService.GetNews(serpQuery, "Ghana", remainingItems)
+		if err == nil && serpResults != nil && len(serpResults.NewsResults) > 0 {
+			// Convert SerpAPI results to news model
+			for _, item := range serpResults.NewsResults {
+				// Create a news item
+				n := models.News{
+					ID:              fmt.Sprintf("serpapi-%d", item.Position),
+					Title:           item.Title,
+					Content:         item.Snippet,
+					URL:             item.Link,
+					Source:          item.Source,
+					Category:        category,
+					IsFake:          false,
+					FakeProbability: 0.5, // Default value
+				}
+
+				// Parse the timestamp if available
+				if item.PublishedAt != "" {
+					if t, err := time.Parse(time.RFC3339, item.PublishedAt); err == nil {
+						n.CreatedAt = t
+					}
+				} else if item.Date != "" {
+					if t, err := time.Parse("01/02/2006", item.Date); err == nil {
+						n.CreatedAt = t
+					}
+				}
+
+				// If we couldn't parse a date, use current time
+				if n.CreatedAt.IsZero() {
+					n.CreatedAt = time.Now()
+				}
+
+				news = append(news, n)
+			}
+		}
+	}
+
 	return news, nil
 }
 
 // GetNewsById returns a specific news article
-func (s *NewsServiceImpl) GetNewsById(id int64) (*models.News, error) {
+func (s *NewsServiceImpl) GetNewsById(id interface{}) (*models.News, error) {
+	// Check if the ID is a string with "serpapi-" prefix
+	if idStr, ok := id.(string); ok && len(idStr) >= 7 && idStr[:7] == "serpapi-" {
+		// This is a SerpAPI article, fetch it directly
+		parts := strings.Split(idStr, "-")
+		positionStr := parts[len(parts)-1] // Get the last part which should be the position
+		position, err := strconv.Atoi(positionStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid SerpAPI article ID format: %w", err)
+		}
+
+		// Determine query based on ID format
+		query := "Ghana news"
+		if len(parts) > 2 {
+			// If format is serpapi-category-position, use the category
+			category := parts[1]
+			query = fmt.Sprintf("%s news Ghana", category)
+		}
+
+		// Create SerpAPI service
+		serpAPIService := NewSerpAPIService()
+
+		// Fetch news from SerpAPI with a larger limit to ensure we find our article
+		serpResults, err := serpAPIService.GetNews(query, "Ghana", 30) // Get enough articles to find the one we want
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch news from SerpAPI: %w", err)
+		}
+
+		// Debug log
+		log.Printf("Looking for SerpAPI article with position %d in %d results\n", position, len(serpResults.NewsResults))
+
+		// Find the article with the matching position
+		for _, item := range serpResults.NewsResults {
+			if item.Position == position {
+				// Create and return the news item
+				n := &models.News{
+					ID:              idStr,
+					Title:           item.Title,
+					Content:         item.Snippet,
+					URL:             item.Link,
+					Source:          item.Source,
+					Category:        "news",
+					IsFake:          false,
+					FakeProbability: 0.5, // Default value
+				}
+
+				// Parse the timestamp if available
+				if item.PublishedAt != "" {
+					if t, err := time.Parse(time.RFC3339, item.PublishedAt); err == nil {
+						n.CreatedAt = t
+					}
+				} else if item.Date != "" {
+					if t, err := time.Parse("01/02/2006", item.Date); err == nil {
+						n.CreatedAt = t
+					}
+				}
+
+				// If we couldn't parse a date, use current time
+				if n.CreatedAt.IsZero() {
+					n.CreatedAt = time.Now()
+				}
+
+				return n, nil
+			}
+		}
+
+		return nil, fmt.Errorf("SerpAPI article with ID %s not found", idStr)
+	}
+
+	// Otherwise, treat it as a regular database ID
+	var idInt int64
+	switch v := id.(type) {
+	case int64:
+		idInt = v
+	case int:
+		idInt = int64(v)
+	case string:
+		var err error
+		idInt, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid news ID format: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported ID type: %T", id)
+	}
 	query := `
 		SELECT id, title, content, url, source, category, is_fake, fake_probability, created_at 
 		FROM news 
@@ -81,7 +221,7 @@ func (s *NewsServiceImpl) GetNewsById(id int64) (*models.News, error) {
 	`
 
 	var news models.News
-	err := s.db.QueryRow(query, id).Scan(
+	err := s.db.QueryRow(query, idInt).Scan(
 		&news.ID,
 		&news.Title,
 		&news.Content,
@@ -95,7 +235,7 @@ func (s *NewsServiceImpl) GetNewsById(id int64) (*models.News, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("news with ID %d not found", id)
+			return nil, fmt.Errorf("news with ID %d not found", idInt)
 		}
 		return nil, err
 	}
@@ -227,11 +367,29 @@ func (s *NewsServiceImpl) DetectFakeNews(title, content string) (map[string]inte
 }
 
 // LogActivity logs user activity with news
-func (s *NewsServiceImpl) LogActivity(userID, newsID int64, activityType string) (*models.UserActivity, error) {
+func (s *NewsServiceImpl) LogActivity(userID int64, newsID interface{}, activityType string) (*models.UserActivity, error) {
 	// Check if the news exists
 	_, err := s.GetNewsById(newsID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert newsID to the appropriate type for database storage
+	var newsIDValue interface{} = newsID
+
+	// If it's a string ID that starts with "serpapi-", we need special handling
+	if idStr, ok := newsID.(string); ok && strings.HasPrefix(idStr, "serpapi-") {
+		// For SerpAPI articles, we'll use a negative ID to avoid conflicts with regular IDs
+		// Extract the position number and negate it
+		posStr := strings.TrimPrefix(idStr, "serpapi-")
+		if pos, err := strconv.ParseInt(posStr, 10, 64); err == nil {
+			newsIDValue = -pos // Use negative number to indicate SerpAPI ID
+		} else {
+			// If we can't parse the position, use a hash of the string as the ID
+			h := fnv.New64a()
+			h.Write([]byte(idStr))
+			newsIDValue = -int64(h.Sum64()) // Use negative hash
+		}
 	}
 
 	query := `
@@ -240,7 +398,7 @@ func (s *NewsServiceImpl) LogActivity(userID, newsID int64, activityType string)
 	`
 
 	now := time.Now()
-	result, err := s.db.Exec(query, userID, newsID, activityType, now)
+	result, err := s.db.Exec(query, userID, newsIDValue, activityType, now)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,123 @@
+{
+  "model_type": "Fake News Detection (Logistic Regression)",
+  "model_path": "models/lr_pipeline.onnx",
+  "test_data": "Data/liar_dataset/valid.tsv",
+  "samples_count": 1284,
+  "classes": [
+    "barely-true",
+    "false",
+    "half-true",
+    "mostly-true",
+    "pants-fire",
+    "true"
+  ],
+  "metrics": {
+    "accuracy": 0.24766355140186916,
+    "precision": 0.24923711172671212,
+    "recall": 0.24766355140186916,
+    "f1_score": 0.24659233678999087,
+    "auc": null
+  },
+  "confusion_matrix": [
+    [
+      46,
+      46,
+      49,
+      37,
+      27,
+      32
+    ],
+    [
+      55,
+      56,
+      36,
+      38,
+      40,
+      38
+    ],
+    [
+      42,
+      42,
+      65,
+      41,
+      26,
+      32
+    ],
+    [
+      35,
+      35,
+      40,
+      63,
+      18,
+      60
+    ],
+    [
+      22,
+      23,
+      13,
+      6,
+      39,
+      13
+    ],
+    [
+      15,
+      19,
+      34,
+      44,
+      8,
+      49
+    ]
+  ],
+  "classification_report": {
+    "barely-true": {
+      "precision": 0.21395348837209302,
+      "recall": 0.1940928270042194,
+      "f1-score": 0.20353982300884957,
+      "support": 237.0
+    },
+    "false": {
+      "precision": 0.25339366515837103,
+      "recall": 0.21292775665399238,
+      "f1-score": 0.23140495867768596,
+      "support": 263.0
+    },
+    "half-true": {
+      "precision": 0.2742616033755274,
+      "recall": 0.2620967741935484,
+      "f1-score": 0.26804123711340205,
+      "support": 248.0
+    },
+    "mostly-true": {
+      "precision": 0.27510917030567683,
+      "recall": 0.250996015936255,
+      "f1-score": 0.2625,
+      "support": 251.0
+    },
+    "pants-fire": {
+      "precision": 0.2468354430379747,
+      "recall": 0.33620689655172414,
+      "f1-score": 0.2846715328467153,
+      "support": 116.0
+    },
+    "true": {
+      "precision": 0.21875,
+      "recall": 0.28994082840236685,
+      "f1-score": 0.24936386768447838,
+      "support": 169.0
+    },
+    "accuracy": 0.24766355140186916,
+    "macro avg": {
+      "precision": 0.2470505617082738,
+      "recall": 0.2577101831236844,
+      "f1-score": 0.24992023655518855,
+      "support": 1284.0
+    },
+    "weighted avg": {
+      "precision": 0.24923711172671212,
+      "recall": 0.24766355140186916,
+      "f1-score": 0.24659233678999087,
+      "support": 1284.0
+    }
+  },
+  "evaluation_time_seconds": 1.3979642391204834
+}

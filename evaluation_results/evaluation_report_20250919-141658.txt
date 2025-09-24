@@ -1,0 +1,22 @@
+DCIT316 Semester Project - Model Evaluation Report
+Generated on: 2025-09-19 14:19:19
+================================================================================
+
+NEWS RECOMMENDATION MODEL EVALUATION
+--------------------------------------------------
+Model: models/recommender_scoring.pth
+News data: Data/MINDsmall_dev/news.tsv
+Behaviors data: Data/MINDsmall_dev/behaviors.tsv
+
+Performance Metrics:
+  NDCG@5: 0.2291
+  MRR@5: 0.2043
+  NDCG@10: 0.2947
+  MRR@10: 0.2315
+
+Model Parameters:
+  Embedding Dimension: 128
+  Max Features: 20000
+  Max History: 50
+
+Evaluation time: 141.45 seconds

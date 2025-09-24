@@ -6,15 +6,15 @@ import (
 
 // News represents a news article in the system
 type News struct {
-	ID              int64     `json:"id"`
-	Title           string    `json:"title"`
-	Content         string    `json:"content"`
-	URL             string    `json:"url,omitempty"`
-	Source          string    `json:"source,omitempty"`
-	Category        string    `json:"category,omitempty"`
-	IsFake          bool      `json:"is_fake"`
-	FakeProbability float64   `json:"fake_probability"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID              interface{} `json:"id"` // Can be int64 or string
+	Title           string      `json:"title"`
+	Content         string      `json:"content"`
+	URL             string      `json:"url,omitempty"`
+	Source          string      `json:"source,omitempty"`
+	Category        string      `json:"category,omitempty"`
+	IsFake          bool        `json:"is_fake"`
+	FakeProbability float64     `json:"fake_probability"`
+	CreatedAt       time.Time   `json:"created_at"`
 }
 
 // NewsInput is used when adding a new news article
@@ -28,17 +28,17 @@ type NewsInput struct {
 
 // UserActivity represents a user's interaction with news
 type UserActivity struct {
-	ID           int64     `json:"id"`
-	UserID       int64     `json:"user_id"`
-	NewsID       int64     `json:"news_id"`
-	ActivityType string    `json:"activity_type"` // view, like, dislike, click
-	CreatedAt    time.Time `json:"created_at"`
+	ID           int64       `json:"id"`
+	UserID       int64       `json:"user_id"`
+	NewsID       interface{} `json:"news_id"`
+	ActivityType string      `json:"activity_type"` // view, like, dislike, click
+	CreatedAt    time.Time   `json:"created_at"`
 }
 
 // ActivityInput is used when logging a user activity
 type ActivityInput struct {
-	NewsID       int64  `json:"news_id" binding:"required"`
-	ActivityType string `json:"activity_type" binding:"required"`
+	NewsID       interface{} `json:"news_id" binding:"required"`
+	ActivityType string      `json:"activity_type" binding:"required"`
 }
 
 // UserNewsPreference represents a user's preference for a news category

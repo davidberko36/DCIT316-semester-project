@@ -1,0 +1,22 @@
+{
+  "model_type": "News Recommendation (Neural Network)",
+  "model_path": "models/recommender_scoring.pth",
+  "news_data": "Data/MINDsmall_dev/news.tsv",
+  "behaviors_data": "Data/MINDsmall_dev/behaviors.tsv",
+  "metrics": {
+    "ndcg@5": 0.22910941208372185,
+    "mrr@5": 0.20430093884800812,
+    "ndcg@10": 0.29470445056029276,
+    "mrr@10": 0.23153263278865918
+  },
+  "parameters": {
+    "embedding_dimension": 128,
+    "max_features": 20000,
+    "max_history": 50,
+    "k_values": [
+      5,
+      10
+    ]
+  },
+  "evaluation_time_seconds": 137.90296149253845
+}

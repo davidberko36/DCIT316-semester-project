@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/davidberko36/DCIT316-semester-project/backend/internal/models"
@@ -103,13 +104,39 @@ func (re *RecommendationEngine) calculateScore(
 	}
 
 	// Factor 2: Recency (newer articles score higher)
-	// This would use the timestamp, but for simplicity we'll use the ID as a proxy
-	recencyScore := math.Min(float64(newsItem.ID)*0.01, 0.3)
+	// Use a default recency score if ID is not a number
+	recencyScore := 0.15 // Default score
+
+	// Convert ID to float64 if possible
+	switch id := newsItem.ID.(type) {
+	case int64:
+		recencyScore = math.Min(float64(id)*0.01, 0.3)
+	case int:
+		recencyScore = math.Min(float64(id)*0.01, 0.3)
+	case float64:
+		recencyScore = math.Min(id*0.01, 0.3)
+	case string:
+		// For string IDs (like SerpAPI), use the current time as a proxy for recency
+		if strings.HasPrefix(id, "serpapi-") {
+			// SerpAPI articles are considered fresh
+			recencyScore = 0.25
+		} else {
+			// Try to convert to a number if it's a numeric string
+			if numID, err := strconv.ParseInt(id, 10, 64); err == nil {
+				recencyScore = math.Min(float64(numID)*0.01, 0.3)
+			}
+		}
+	}
+
 	score += recencyScore
 
 	// Factor 3: Based on user history (interaction patterns)
 	for _, activity := range userHistory {
-		if activity.NewsID == newsItem.ID {
+		// Compare IDs based on their string representation
+		activityIDStr := fmt.Sprintf("%v", activity.NewsID)
+		newsIDStr := fmt.Sprintf("%v", newsItem.ID)
+
+		if activityIDStr == newsIDStr {
 			// User has already seen this article, reduce score
 			score -= 0.4
 			break

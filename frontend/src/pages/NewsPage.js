@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Form, Button, Alert, Spinner, Pagination } from 'react-bootstrap';
+import { Row, Col, Form, Button, Alert, Spinner, Pagination, ButtonGroup, ToggleButton } from 'react-bootstrap';
 import Layout from '../components/Layout';
 import NewsCard from '../components/NewsCard';
 import newsService from '../services/newsService';
@@ -11,30 +11,48 @@ const NewsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [newsSource, setNewsSource] = useState('default');
   const articlesPerPage = 9; // Number of articles per page
 
-  const fetchNews = async (page = 1, search = '') => {
+  const fetchNews = async (page = 1, search = '', source = 'default') => {
     try {
       setLoading(true);
-      const params = {
-        page,
-        pageSize: articlesPerPage,
-        ...(search && { q: search })
-      };
       
-      const response = await newsService.getNews(params);
-      
-      // Handle different possible response structures
-      if (Array.isArray(response)) {
-        setNews(response);
-        setTotalPages(Math.ceil(response.length / articlesPerPage));
-      } else if (response.articles && Array.isArray(response.articles)) {
-        setNews(response.articles);
-        setTotalPages(Math.ceil((response.totalResults || response.articles.length) / articlesPerPage));
+      if (source === 'serpapi') {
+        // Fetch from SerpAPI
+        const query = search || 'Ghana news';
+        const response = await newsService.getSerpApiNews(query);
+        
+        if (response.articles && Array.isArray(response.articles)) {
+          setNews(response.articles);
+          setTotalPages(Math.ceil(response.articles.length / articlesPerPage));
+        } else {
+          setNews([]);
+          setTotalPages(1);
+          console.warn('Unexpected SerpAPI response format:', response);
+        }
       } else {
-        setNews([]);
-        setTotalPages(1);
-        console.warn('Unexpected response format:', response);
+        // Fetch from default API
+        const params = {
+          page,
+          pageSize: articlesPerPage,
+          ...(search && { q: search })
+        };
+        
+        const response = await newsService.getNews(params);
+        
+        // Handle different possible response structures
+        if (Array.isArray(response)) {
+          setNews(response);
+          setTotalPages(Math.ceil(response.length / articlesPerPage));
+        } else if (response.articles && Array.isArray(response.articles)) {
+          setNews(response.articles);
+          setTotalPages(Math.ceil((response.totalResults || response.articles.length) / articlesPerPage));
+        } else {
+          setNews([]);
+          setTotalPages(1);
+          console.warn('Unexpected response format:', response);
+        }
       }
       
       setError(null);
@@ -47,18 +65,23 @@ const NewsPage = () => {
   };
 
   useEffect(() => {
-    fetchNews(currentPage, searchTerm);
-  }, [currentPage]);
+    fetchNews(currentPage, searchTerm, newsSource);
+  }, [currentPage, newsSource]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     setCurrentPage(1); // Reset to first page on new search
-    fetchNews(1, searchTerm);
+    fetchNews(1, searchTerm, newsSource);
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
+  };
+
+  const handleSourceChange = (source) => {
+    setNewsSource(source);
+    setCurrentPage(1);
   };
 
   // Generate pagination items
@@ -140,7 +163,7 @@ const NewsPage = () => {
       
       <Form onSubmit={handleSearch} className="mb-4">
         <Row>
-          <Col md={8} lg={9}>
+          <Col md={6} lg={7}>
             <Form.Group controlId="searchTerm">
               <Form.Control
                 type="text"
@@ -150,7 +173,33 @@ const NewsPage = () => {
               />
             </Form.Group>
           </Col>
-          <Col md={4} lg={3}>
+          <Col md={3} lg={2}>
+            <ButtonGroup className="w-100">
+              <ToggleButton
+                id="source-default"
+                type="radio"
+                variant="outline-secondary"
+                name="source"
+                value="default"
+                checked={newsSource === 'default'}
+                onChange={(e) => handleSourceChange(e.currentTarget.value)}
+              >
+                Standard
+              </ToggleButton>
+              <ToggleButton
+                id="source-serpapi"
+                type="radio"
+                variant="outline-secondary"
+                name="source"
+                value="serpapi"
+                checked={newsSource === 'serpapi'}
+                onChange={(e) => handleSourceChange(e.currentTarget.value)}
+              >
+                SerpAPI
+              </ToggleButton>
+            </ButtonGroup>
+          </Col>
+          <Col md={3} lg={3}>
             <Button variant="primary" type="submit" className="w-100">
               Search
             </Button>
@@ -161,6 +210,17 @@ const NewsPage = () => {
       {error && (
         <Alert variant="danger">{error}</Alert>
       )}
+      
+      <Alert variant="info" className="mb-3">
+        <small className="d-block">
+          Currently displaying news from: <strong>{newsSource === 'serpapi' ? 'SerpAPI' : 'Standard Sources'}</strong>
+          {newsSource === 'serpapi' && (
+            <span className="d-block mt-1">
+              SerpAPI provides comprehensive news aggregation from multiple sources across the web.
+            </span>
+          )}
+        </small>
+      </Alert>
       
       {loading ? (
         <div className="text-center my-5">

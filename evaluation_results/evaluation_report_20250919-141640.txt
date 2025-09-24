@@ -1,0 +1,51 @@
+DCIT316 Semester Project - Model Evaluation Report
+Generated on: 2025-09-19 14:16:42
+================================================================================
+
+FAKE NEWS DETECTION MODEL EVALUATION
+--------------------------------------------------
+Model: models/lr_pipeline.onnx
+Test data: Data/liar_dataset/valid.tsv
+Samples: 1284
+Classes: barely-true, false, half-true, mostly-true, pants-fire, true
+
+Performance Metrics:
+  Accuracy: 0.2477
+  Precision (weighted): 0.2492
+  Recall (weighted): 0.2477
+  F1 Score (weighted): 0.2466
+
+Class-wise Performance:
+  Class 'barely-true':
+    Precision: 0.2140
+    Recall: 0.1941
+    F1 Score: 0.2035
+    Support: 237.0
+  Class 'false':
+    Precision: 0.2534
+    Recall: 0.2129
+    F1 Score: 0.2314
+    Support: 263.0
+  Class 'half-true':
+    Precision: 0.2743
+    Recall: 0.2621
+    F1 Score: 0.2680
+    Support: 248.0
+  Class 'mostly-true':
+    Precision: 0.2751
+    Recall: 0.2510
+    F1 Score: 0.2625
+    Support: 251.0
+  Class 'pants-fire':
+    Precision: 0.2468
+    Recall: 0.3362
+    F1 Score: 0.2847
+    Support: 116.0
+  Class 'true':
+    Precision: 0.2188
+    Recall: 0.2899
+    F1 Score: 0.2494
+    Support: 169.0
+
+Evaluation time: 1.31 seconds
+

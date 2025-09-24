@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/davidberko36/DCIT316-semester-project/backend/internal/models"
 	"github.com/davidberko36/DCIT316-semester-project/backend/internal/services"
@@ -41,6 +42,21 @@ func (h *NewsHandler) GetNews(c *gin.Context) {
 // GetNewsById returns a specific news article
 func (h *NewsHandler) GetNewsById(c *gin.Context) {
 	idStr := c.Param("id")
+
+	// Check if this is a SerpAPI ID
+	if strings.HasPrefix(idStr, "serpapi-") {
+		// Pass the string ID directly for SerpAPI articles
+		news, err := h.newsService.GetNewsById(idStr)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("News article not found: %v", err)})
+			return
+		}
+
+		c.JSON(http.StatusOK, news)
+		return
+	}
+
+	// For database IDs, convert to int64
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})

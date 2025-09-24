@@ -19,13 +19,13 @@ type UserService interface {
 type NewsService interface {
 	// News management
 	GetNews(category string, limit, offset int) ([]models.News, error)
-	GetNewsById(id int64) (*models.News, error)
+	GetNewsById(id interface{}) (*models.News, error)
 	CreateNews(input models.NewsInput) (*models.News, error)
 	UpdateNews(id int64, input models.NewsInput) (*models.News, error)
 	DeleteNews(id int64) error
 
 	// User activity
-	LogActivity(userID, newsID int64, activityType string) (*models.UserActivity, error)
+	LogActivity(userID int64, newsID interface{}, activityType string) (*models.UserActivity, error)
 	GetUserActivity(userID int64, limit, offset int) ([]models.UserActivity, error)
 
 	// ML-related operations
